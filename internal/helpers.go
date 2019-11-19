@@ -70,6 +70,7 @@ func RecvMsg(c net.Conn) []byte {
 }
 
 func RunCmd(cmdMsg CmdMsg) (x CmdResult, err error) {
+	log.Print("running: ", cmdMsg)
 	cmd := exec.Command(cmdMsg.Cmd, cmdMsg.Args...)
 
 	stdoutPipe, err := cmd.StdoutPipe()
