@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path/filepath"
 	"strings"
 )
 
@@ -108,8 +109,19 @@ func GetSockAddr() string {
 
 	currentUser, _ := user.Current()
 	uid := currentUser.Uid
-	sockDir := fmt.Sprintf("/run/user/%s/remotectl", uid)
 
+	displayVar := os.Getenv("DISPLAY")
+	display := strings.Replace(strings.Replace(displayVar, ":", "", 1), "unix", "", 1)
+
+	addr := fmt.Sprintf("/run/user/%s/remotectl/display%s.sock", uid, display)
+
+	return addr
+}
+
+func OpenSock(addr string) net.Listener {
+	log.Printf("using socket on %s", addr)
+
+	sockDir := filepath.Dir(addr)
 	var perms os.FileMode = 0700
 	if err := os.MkdirAll(sockDir, perms); err != nil {
 		log.Fatal(err)
@@ -117,16 +129,6 @@ func GetSockAddr() string {
 	if err := os.Chmod(sockDir, perms); err != nil {
 		log.Fatal(err)
 	}
-
-	displayVar := os.Getenv("DISPLAY")
-	display := strings.Replace(strings.Replace(displayVar, ":", "", 1), "unix", "", 1)
-	addr := fmt.Sprintf("%s/display%s.sock", sockDir, display)
-
-	return addr
-}
-
-func OpenSock(addr string) net.Listener {
-	log.Printf("using socket on %s", addr)
 
 	if err := os.RemoveAll(addr); err != nil {
 		log.Fatal(err)
@@ -137,7 +139,7 @@ func OpenSock(addr string) net.Listener {
 		log.Fatal(err)
 	}
 
-	if err := os.Chmod(addr, 0700); err != nil {
+	if err := os.Chmod(addr, perms); err != nil {
 		log.Fatal(err)
 	}
 
